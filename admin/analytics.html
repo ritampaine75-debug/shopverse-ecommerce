@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics - Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a href="dashboard.html" class="logo">Shop<span>Verse</span> <span style="font-size:10px;color:var(--accent)">Admin</span></a>
+      <a href="dashboard.html" class="nav-item"><i class="fas fa-chart-line"></i> Dashboard</a>
+      <a href="products.html" class="nav-item"><i class="fas fa-box"></i> Products</a>
+      <a href="categories.html" class="nav-item"><i class="fas fa-tags"></i> Categories</a>
+      <a href="orders.html" class="nav-item"><i class="fas fa-truck"></i> Orders</a>
+      <a href="users.html" class="nav-item"><i class="fas fa-users"></i> Users</a>
+      <a href="reviews.html" class="nav-item"><i class="fas fa-star"></i> Reviews</a>
+      <a href="coupons.html" class="nav-item"><i class="fas fa-percent"></i> Coupons</a>
+      <a href="banners.html" class="nav-item"><i class="fas fa-images"></i> Banners</a>
+      <a href="analytics.html" class="nav-item active"><i class="fas fa-chart-bar"></i> Analytics</a>
+      <div class="nav-divider"></div>
+      <a href="settings.html" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+      <a href="../index.html" class="nav-item"><i class="fas fa-store"></i> View Store</a>
+      <a href="#" class="nav-item" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+    <div class="admin-overlay" id="adminOverlay" onclick="document.getElementById('adminSidebar').classList.remove('open');this.classList.remove('show')"></div>
+    <div class="admin-main">
+      <header class="admin-header">
+        <button class="btn btn-sm btn-secondary" onclick="document.getElementById('adminSidebar').classList.toggle('open');document.getElementById('adminOverlay').classList.toggle('show')" style="display:none"><i class="fas fa-bars"></i></button>
+        <h1 class="page-title">Analytics</h1>
+        <div class="admin-actions">
+          <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+          <span id="adminName"></span>
+        </div>
+      </header>
+
+      <div class="admin-stats" id="statsGrid"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div class="form-card">
+          <h3 style="margin-bottom:16px">Sales by Month</h3>
+          <div id="monthlyChart" style="display:flex;align-items:flex-end;gap:8px;height:200px;padding:16px 0;border-bottom:2px solid var(--border)"></div>
+        </div>
+        <div class="form-card">
+          <h3 style="margin-bottom:16px">Revenue by Status</h3>
+          <div id="revenuePie" style="display:flex;align-items:center;gap:24px;padding:16px 0">
+            <div id="pieCanvas" style="width:140px;height:140px;border-radius:50%;position:relative;overflow:hidden;flex-shrink:0"></div>
+            <div id="pieLegend"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-top:24px">
+        <h3 style="margin-bottom:16px">Top Selling Products</h3>
+        <div style="overflow-x:auto"><table class="table">
+          <thead><tr><th>#</th><th>Product</th><th>Total Qty Sold</th><th>Revenue</th></tr></thead>
+          <tbody id="topProductsBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const STATUS_COLORS = { pending: '#fdcb6e', processing: '#74b9ff', shipped: '#a29bfe', delivered: '#00b894', cancelled: '#e17055' };
+
+    auth.onAuthStateChanged(async user => {
+      if (!Admin.checkAuth()) return;
+      document.getElementById('adminName').textContent = user.email;
+
+      const snap = await db.ref('orders').once('value');
+      const orders = snap.val() ? Object.entries(snap.val()).map(([id, o]) => ({ id, ...o })) : [];
+      if (!orders.length) {
+        document.getElementById('statsGrid').innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:40px">No orders yet</p>';
+        return;
+      }
+
+      const cancelledOrders = orders.filter(o => o.status === 'cancelled');
+      const activeOrders = orders.filter(o => o.status !== 'cancelled');
+      const totalRevenue = activeOrders.reduce((s, o) => s + (o.total || 0), 0);
+      const totalOrders = orders.length;
+      const avgOrder = activeOrders.length ? totalRevenue / activeOrders.length : 0;
+      let totalQtySold = 0;
+      const productSales = {};
+      activeOrders.forEach(o => {
+        if (o.items) {
+          o.items.forEach(item => {
+            const qty = item.quantity || 1;
+            totalQtySold += qty;
+            const name = item.name || item.productName || 'Unknown';
+            productSales[name] = productSales[name] || { qty: 0, revenue: 0 };
+            productSales[name].qty += qty;
+            productSales[name].revenue += (item.price || 0) * qty;
+          });
+        }
+      });
+
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card"><div class="icon">💰</div><div class="value">${App.formatPrice(totalRevenue)}</div><div class="label">Total Revenue</div></div>
+        <div class="stat-card"><div class="icon">📦</div><div class="value">${totalOrders}</div><div class="label">Total Orders</div></div>
+        <div class="stat-card"><div class="icon">📊</div><div class="value">${App.formatPrice(avgOrder)}</div><div class="label">Avg Order Value</div></div>
+        <div class="stat-card"><div class="icon">🏷️</div><div class="value">${totalQtySold}</div><div class="label">Products Sold</div></div>
+      `;
+
+      const monthlyTotals = {};
+      activeOrders.forEach(o => {
+        if (o.createdAt) {
+          const d = new Date(o.createdAt);
+          const key = d.getFullYear() + '-' + d.getMonth();
+          monthlyTotals[key] = (monthlyTotals[key] || 0) + (o.total || 0);
+        }
+      });
+      const sortedMonths = Object.keys(monthlyTotals).sort();
+      const maxVal = Math.max(...Object.values(monthlyTotals), 1);
+      const chartEl = document.getElementById('monthlyChart');
+      chartEl.innerHTML = sortedMonths.map(key => {
+        const val = monthlyTotals[key];
+        const [y, m] = key.split('-');
+        const pct = (val / maxVal) * 100;
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end">
+          <div style="font-size:11px;margin-bottom:4px;color:var(--text-muted)">${App.formatPrice(val)}</div>
+          <div style="width:100%;max-width:48px;background:var(--accent);border-radius:4px 4px 0 0;height:${pct}%;min-height:4px;transition:height 0.3s"></div>
+          <div style="font-size:11px;margin-top:6px;color:var(--text-muted)">${MONTHS[parseInt(m)]}</div>
+        </div>`;
+      }).join('');
+
+      const revByStatus = {};
+      activeOrders.forEach(o => {
+        const s = o.status || 'pending';
+        revByStatus[s] = (revByStatus[s] || 0) + (o.total || 0);
+      });
+      cancelledOrders.forEach(o => {
+        revByStatus.cancelled = (revByStatus.cancelled || 0) + (o.total || 0);
+      });
+      const statusOrder = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+      const pieData = statusOrder.filter(s => revByStatus[s]).map(s => ({ status: s, revenue: revByStatus[s] }));
+      const totalRevAll = pieData.reduce((s, d) => s + d.revenue, 0);
+      let angle = 0;
+      const pieCanvas = document.getElementById('pieCanvas');
+      pieCanvas.innerHTML = pieData.map(d => {
+        const pct = d.revenue / totalRevAll;
+        const deg = pct * 360;
+        const start = angle;
+        angle += deg;
+        if (deg >= 180) {
+          const midAngle = start + deg / 2;
+          const rad = (midAngle * Math.PI) / 180;
+          const x = 70 + 70 * Math.cos(rad - Math.PI / 2);
+          const y = 70 + 70 * Math.sin(rad - Math.PI / 2);
+          return `
+            <div style="position:absolute;inset:0;clip-path:polygon(50% 50%, ${50 + 50 * Math.cos((start * Math.PI) / 180 - Math.PI / 2)}% ${50 + 50 * Math.sin((start * Math.PI) / 180 - Math.PI / 2)}%, ${x}% ${y}%);background:${STATUS_COLORS[d.status]}"></div>
+            <div style="position:absolute;inset:0;clip-path:polygon(50% 50%, ${x}% ${y}%, ${50 + 50 * Math.cos(((start + deg) * Math.PI) / 180 - Math.PI / 2)}% ${50 + 50 * Math.sin(((start + deg) * Math.PI) / 180 - Math.PI / 2)}%);background:${STATUS_COLORS[d.status]}"></div>`;
+        }
+        return `<div style="position:absolute;inset:0;clip-path:polygon(50% 50%, ${50 + 50 * Math.cos((start * Math.PI) / 180 - Math.PI / 2)}% ${50 + 50 * Math.sin((start * Math.PI) / 180 - Math.PI / 2)}%, ${50 + 50 * Math.cos(((start + deg) * Math.PI) / 180 - Math.PI / 2)}% ${50 + 50 * Math.sin(((start + deg) * Math.PI) / 180 - Math.PI / 2)}%);background:${STATUS_COLORS[d.status]}"></div>`;
+      }).join('');
+      pieCanvas.innerHTML += `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60px;height:60px;background:var(--card-bg);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700">${App.formatPrice(totalRevAll)}</div>`;
+
+      document.getElementById('pieLegend').innerHTML = pieData.map(d => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px">
+          <span style="width:12px;height:12px;border-radius:3px;background:${STATUS_COLORS[d.status]};flex-shrink:0"></span>
+          <span style="flex:1;text-transform:capitalize">${d.status}</span>
+          <span style="font-weight:600">${App.formatPrice(d.revenue)}</span>
+          <span style="color:var(--text-muted);font-size:12px">(${(d.revenue / totalRevAll * 100).toFixed(1)}%)</span>
+        </div>
+      `).join('');
+
+      const sortedProducts = Object.entries(productSales).sort((a, b) => b[1].qty - a[1].qty);
+      document.getElementById('topProductsBody').innerHTML = sortedProducts.map(([name, data], i) => `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${name}</td>
+          <td>${data.qty}</td>
+          <td>${App.formatPrice(data.revenue)}</td>
+        </tr>
+      `).join('');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a href="dashboard.html" class="logo">Shop<span>Verse</span> <span style="font-size:10px;color:var(--accent)">Admin</span></a>
+      <a href="dashboard.html" class="nav-item"><i class="fas fa-chart-line"></i> Dashboard</a>
+      <a href="products.html" class="nav-item"><i class="fas fa-box"></i> Products</a>
+      <a href="categories.html" class="nav-item"><i class="fas fa-tags"></i> Categories</a>
+      <a href="orders.html" class="nav-item"><i class="fas fa-truck"></i> Orders</a>
+      <a href="users.html" class="nav-item"><i class="fas fa-users"></i> Users</a>
+      <a href="reviews.html" class="nav-item"><i class="fas fa-star"></i> Reviews</a>
+      <a href="coupons.html" class="nav-item"><i class="fas fa-percent"></i> Coupons</a>
+      <a href="banners.html" class="nav-item"><i class="fas fa-images"></i> Banners</a>
+      <a href="analytics.html" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+      <div class="nav-divider"></div>
+      <a href="settings.html" class="nav-item active"><i class="fas fa-cog"></i> Settings</a>
+      <a href="../index.html" class="nav-item"><i class="fas fa-store"></i> View Store</a>
+      <a href="#" class="nav-item" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+    <div class="admin-overlay" id="adminOverlay" onclick="document.getElementById('adminSidebar').classList.remove('open');this.classList.remove('show')"></div>
+    <div class="admin-main">
+      <header class="admin-header">
+        <button class="btn btn-sm btn-secondary" onclick="document.getElementById('adminSidebar').classList.toggle('open');document.getElementById('adminOverlay').classList.toggle('show')" style="display:none"><i class="fas fa-bars"></i></button>
+        <h1 class="page-title">Settings</h1>
+        <div class="admin-actions">
+          <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+          <span id="adminName"></span>
+        </div>
+      </header>
+
+      <div class="form-card" style="max-width:640px">
+        <form id="settingsForm" onsubmit="saveSettings(event)">
+          <div class="form-group">
+            <label class="label">Site Name</label>
+            <input type="text" id="siteName" class="input" placeholder="ShopVerse">
+          </div>
+          <div class="form-group">
+            <label class="label">Contact Email</label>
+            <input type="email" id="contactEmail" class="input" placeholder="contact@shopverse.com">
+          </div>
+          <div class="form-group">
+            <label class="label">Contact Number</label>
+            <input type="tel" id="contactNumber" class="input" placeholder="+91 9876543210">
+          </div>
+          <div class="form-group">
+            <label class="label">Announcement</label>
+            <textarea id="announcement" class="input" rows="3" placeholder="Announcement shown at top of store"></textarea>
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;gap:12px">
+            <input type="checkbox" id="googleLogin" style="width:18px;height:18px;accent-color:var(--accent)">
+            <label for="googleLogin" style="cursor:pointer">Enable Google Login</label>
+          </div>
+          <div style="margin-top:20px">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Settings</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    auth.onAuthStateChanged(async user => {
+      if (!Admin.checkAuth()) return;
+      document.getElementById('adminName').textContent = user.email;
+
+      const snap = await db.ref('settings').once('value');
+      const settings = snap.val() || {};
+      if (settings.siteName) document.getElementById('siteName').value = settings.siteName;
+      if (settings.contactEmail) document.getElementById('contactEmail').value = settings.contactEmail;
+      if (settings.contactNumber) document.getElementById('contactNumber').value = settings.contactNumber;
+      if (settings.announcement) document.getElementById('announcement').value = settings.announcement;
+      document.getElementById('googleLogin').checked = settings.googleLogin === true;
+    });
+
+    async function saveSettings(e) {
+      e.preventDefault();
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+      const fields = [
+        { key: 'siteName', el: document.getElementById('siteName') },
+        { key: 'contactEmail', el: document.getElementById('contactEmail') },
+        { key: 'contactNumber', el: document.getElementById('contactNumber') },
+        { key: 'announcement', el: document.getElementById('announcement') },
+        { key: 'googleLogin', el: document.getElementById('googleLogin') }
+      ];
+      try {
+        for (const f of fields) {
+          const val = f.el.type === 'checkbox' ? f.el.checked : f.el.value;
+          await Admin.updateSetting(f.key, val);
+        }
+        App.showToast('Settings saved', 'success');
+      } catch (err) {
+        App.showToast('Error saving settings', 'error');
+      }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> Save Settings';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coupons - Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a href="dashboard.html" class="logo">Shop<span>Verse</span> <span style="font-size:10px;color:var(--accent)">Admin</span></a>
+      <a href="dashboard.html" class="nav-item"><i class="fas fa-chart-line"></i> Dashboard</a>
+      <a href="products.html" class="nav-item"><i class="fas fa-box"></i> Products</a>
+      <a href="categories.html" class="nav-item"><i class="fas fa-tags"></i> Categories</a>
+      <a href="orders.html" class="nav-item"><i class="fas fa-truck"></i> Orders</a>
+      <a href="users.html" class="nav-item"><i class="fas fa-users"></i> Users</a>
+      <a href="reviews.html" class="nav-item"><i class="fas fa-star"></i> Reviews</a>
+      <a href="coupons.html" class="nav-item active"><i class="fas fa-percent"></i> Coupons</a>
+      <a href="banners.html" class="nav-item"><i class="fas fa-images"></i> Banners</a>
+      <a href="analytics.html" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+      <div class="nav-divider"></div>
+      <a href="settings.html" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+      <a href="../index.html" class="nav-item"><i class="fas fa-store"></i> View Store</a>
+      <a href="#" class="nav-item" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+    <div class="admin-overlay" id="adminOverlay" onclick="document.getElementById('adminSidebar').classList.remove('open');this.classList.remove('show')"></div>
+    <div class="admin-main">
+      <header class="admin-header">
+        <h1 class="page-title">Coupons</h1>
+        <div class="admin-actions">
+          <button class="btn btn-primary btn-sm" onclick="openCouponModal()"><i class="fas fa-plus"></i> Add Coupon</button>
+          <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        </div>
+      </header>
+      <div style="margin-bottom:16px"><input type="text" id="searchCoupons" class="input" style="max-width:300px" placeholder="Search coupons..." oninput="renderCoupons()"></div>
+      <div style="overflow-x:auto"><table class="table" id="couponsTable"><thead><tr><th>Code</th><th>Discount</th><th>Min Order</th><th>Expiry</th><th>Used / Limit</th><th>Actions</th></tr></thead><tbody id="couponsBody"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="modal" id="couponModal">
+    <div class="modal-backdrop" onclick="closeCouponModal()"></div>
+    <div class="modal-content modal-content-sm">
+      <div class="modal-header">
+        <h3 id="couponModalTitle">Add Coupon</h3>
+        <button class="modal-close" onclick="closeCouponModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Coupon Code</label>
+          <input type="text" id="couponCode" class="input" placeholder="e.g. SUMMER20" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Discount Type</label>
+            <select id="couponDiscountType" class="input" onchange="document.getElementById('couponDiscountLabel').textContent = this.value === 'percent' ? 'Discount (%)' : 'Discount (Amount)'">
+              <option value="percent">Percentage</option>
+              <option value="fixed">Fixed Amount</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label id="couponDiscountLabel">Discount (%)</label>
+            <input type="number" id="couponDiscount" class="input" placeholder="e.g. 20" min="0" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Min Order Amount</label>
+            <input type="number" id="couponMinOrder" class="input" placeholder="e.g. 50" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label>Usage Limit</label>
+            <input type="number" id="couponUsageLimit" class="input" placeholder="e.g. 100" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Expiry Date</label>
+          <input type="date" id="couponExpiry" class="input" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeCouponModal()">Cancel</button>
+        <button class="btn btn-primary" id="couponSaveBtn" onclick="saveCoupon()">Create Coupon</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    let allCoupons = [];
+    let editingCouponId = null;
+
+    auth.onAuthStateChanged(async user => {
+      if (!Admin.checkAuth()) return;
+      const snap = await db.ref('coupons').once('value');
+      if (snap.val()) allCoupons = Object.entries(snap.val()).map(([id, c]) => ({ id, ...c }));
+      renderCoupons();
+    });
+
+    function renderCoupons() {
+      const q = document.getElementById('searchCoupons').value.toLowerCase();
+      const filtered = allCoupons.filter(c => (c.code || '').toLowerCase().includes(q));
+      document.getElementById('couponsBody').innerHTML = filtered.map(c => `
+        <tr>
+          <td><strong>${c.code}</strong></td>
+          <td>${c.discountType === 'percent' ? `${c.discount}%` : App.formatPrice(c.discount)}</td>
+          <td>${c.minOrder ? App.formatPrice(c.minOrder) : '-'}</td>
+          <td>${c.expiry ? new Date(c.expiry).toLocaleDateString() : '-'}</td>
+          <td>${c.usedCount || 0}${c.usageLimit ? ` / ${c.usageLimit}` : ''}</td>
+          <td class="actions">
+            <button class="btn btn-sm btn-secondary" onclick="editCoupon('${c.id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-sm btn-danger" onclick="deleteCoupon('${c.id}')"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openCouponModal(coupon) {
+      editingCouponId = coupon ? coupon.id : null;
+      document.getElementById('couponModalTitle').textContent = coupon ? 'Edit Coupon' : 'Add Coupon';
+      document.getElementById('couponSaveBtn').textContent = coupon ? 'Update Coupon' : 'Create Coupon';
+      document.getElementById('couponCode').value = coupon ? coupon.code : '';
+      document.getElementById('couponDiscountType').value = coupon ? coupon.discountType : 'percent';
+      document.getElementById('couponDiscount').value = coupon ? coupon.discount : '';
+      document.getElementById('couponMinOrder').value = coupon ? coupon.minOrder || 0 : 0;
+      document.getElementById('couponUsageLimit').value = coupon ? coupon.usageLimit || 0 : 0;
+      document.getElementById('couponExpiry').value = coupon ? coupon.expiry || '' : '';
+      document.getElementById('couponDiscountLabel').textContent = (coupon ? coupon.discountType : 'percent') === 'percent' ? 'Discount (%)' : 'Discount (Amount)';
+      document.getElementById('couponModal').classList.add('show');
+    }
+
+    function editCoupon(id) {
+      const c = allCoupons.find(x => x.id === id);
+      if (c) openCouponModal(c);
+    }
+
+    function closeCouponModal() {
+      document.getElementById('couponModal').classList.remove('show');
+      editingCouponId = null;
+    }
+
+    async function saveCoupon() {
+      const code = document.getElementById('couponCode').value.trim();
+      const discountType = document.getElementById('couponDiscountType').value;
+      const discount = parseFloat(document.getElementById('couponDiscount').value);
+      const minOrder = parseFloat(document.getElementById('couponMinOrder').value) || 0;
+      const usageLimit = parseInt(document.getElementById('couponUsageLimit').value) || 0;
+      const expiry = document.getElementById('couponExpiry').value;
+
+      if (!code || !discount || !expiry) return App.showToast('Fill all required fields', 'error');
+
+      const data = { code: code.toUpperCase(), discountType, discount, minOrder, usageLimit, expiry };
+
+      if (editingCouponId) {
+        await Admin.updateCoupon(editingCouponId, data);
+        const c = allCoupons.find(x => x.id === editingCouponId);
+        if (c) Object.assign(c, data);
+        App.showToast('Coupon updated', 'success');
+      } else {
+        const key = await Admin.createCoupon(data);
+        allCoupons.push({ id: key, ...data, usedCount: 0 });
+        App.showToast('Coupon created', 'success');
+      }
+      closeCouponModal();
+      renderCoupons();
+    }
+
+    async function deleteCoupon(id) {
+      if (!confirm('Delete this coupon?')) return;
+      await Admin.deleteCoupon(id);
+      allCoupons = allCoupons.filter(c => c.id !== id);
+      renderCoupons();
+      App.showToast('Coupon deleted', 'info');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+.cart-page { padding: 120px 0 60px; min-height: 80vh; }
+.cart-page h1 { font-size: 28px; font-weight: 800; margin-bottom: 32px; }
+.cart-layout { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: start; }
+.cart-item {
+  display: flex; gap: 20px;
+  background: var(--glass); backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: var(--transition);
+}
+.cart-item:hover { box-shadow: var(--shadow); }
+.cart-item img { width: 100px; height: 100px; object-fit: cover; border-radius: var(--radius-sm); }
+.cart-item .details { flex: 1; }
+.cart-item .details h3 { font-size: 16px; margin-bottom: 4px; }
+.cart-item .details .price { font-weight: 700; color: var(--primary); }
+.cart-item .qty { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.cart-item .qty button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+.cart-item .qty button:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+.cart-item .qty span { font-weight: 600; min-width: 24px; text-align: center; }
+.cart-item .remove { color: #e17055; cursor: pointer; font-size: 14px; background: none; border: none; font-weight: 600; }
+.cart-summary {
+  background: var(--glass); backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  position: sticky; top: 100px;
+}
+.cart-summary h3 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+.cart-summary .row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 15px; }
+.cart-summary .total { font-size: 20px; font-weight: 800; border-top: 2px solid var(--border); padding-top: 16px; margin-top: 8px; }
+.cart-summary .btn { width: 100%; justify-content: center; margin-top: 16px; }
+.cart-empty { text-align: center; padding: 80px 20px; }
+.cart-empty h2 { margin: 16px 0; }
+
+@media (max-width: 768px) { .cart-layout { grid-template-columns: 1fr; } .cart-item img { width: 80px; height: 80px; } }

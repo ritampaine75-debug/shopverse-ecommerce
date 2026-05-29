@@ -1,0 +1,25 @@
+.checkout-page { padding: 120px 0 60px; min-height: 80vh; }
+.checkout-page h1 { font-size: 28px; font-weight: 800; margin-bottom: 32px; }
+.checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: start; }
+.checkout-form { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 32px; }
+.checkout-form h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.checkout-form .form-group { margin-bottom: 16px; }
+.checkout-form .form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+.checkout-form .form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.checkout-form .coupon { display: flex; gap: 8px; }
+.checkout-form .coupon .input { flex: 1; }
+.checkout-order { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 24px; position: sticky; top: 100px; }
+.checkout-order h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.checkout-order .item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.checkout-order .item img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+.checkout-order .item .info { flex: 1; font-size: 14px; }
+.checkout-order .item .info .name { font-weight: 600; }
+.checkout-order .row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+.checkout-order .total { font-size: 20px; font-weight: 800; border-top: 2px solid var(--border); padding-top: 12px; margin-top: 4px; }
+.checkout-order .btn { width: 100%; justify-content: center; margin-top: 16px; }
+.payment-methods { display: grid; gap: 8px; margin-bottom: 16px; }
+.payment-method { display: flex; align-items: center; gap: 12px; padding: 12px; border: 2px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); }
+.payment-method:hover, .payment-method.selected { border-color: var(--primary); }
+.payment-method input[type="radio"] { accent-color: var(--primary); }
+
+@media (max-width: 768px) { .checkout-layout { grid-template-columns: 1fr; } .checkout-form .form-row { grid-template-columns: 1fr; } }

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cart - ShopVerse</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/cart.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">Shop<span>Verse</span></a>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+      <div class="nav-links" id="navLinks">
+        <a href="index.html">Home</a>
+        <a href="products.html">Products</a>
+        <a href="categories.html">Categories</a>
+        <a href="orders.html">Orders</a>
+        <a href="admin/dashboard.html" class="nav-admin" style="display:none">Admin</a>
+      </div>
+      <div class="nav-icons">
+        <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        <a href="search.html"><i class="fas fa-search"></i></a>
+        <a href="wishlist.html"><i class="fas fa-heart"></i><span class="count wishlist-count">0</span></a>
+        <a href="cart.html"><i class="fas fa-shopping-cart"></i><span class="count cart-count">0</span></a>
+        <a href="login.html" class="nav-login"><i class="fas fa-user"></i></a>
+        <a href="profile.html" class="nav-user" style="display:none"><i class="fas fa-user"></i></a>
+      </div>
+    </div>
+  </nav>
+  <div class="cart-page">
+    <div class="container">
+      <h1>Shopping Cart</h1>
+      <div id="cartContent">
+        <div class="cart-empty"><i class="fas fa-shopping-cart" style="font-size:64px;color:var(--border)"></i><h2>Your cart is empty</h2><p style="color:var(--text-secondary)">Browse products and add them to your cart</p><a href="products.html" class="btn btn-primary" style="margin-top:16px">Continue Shopping</a></div>
+      </div>
+    </div>
+  </div>
+  <footer class="footer">
+    <div class="container">
+      <div class="grid">
+        <div><h4>ShopVerse</h4><p style="color:var(--text-secondary)">Your premium shopping destination.</p></div>
+        <div><h4>Quick Links</h4><a href="products.html">Products</a><a href="categories.html">Categories</a><a href="cart.html">Cart</a><a href="orders.html">Orders</a></div>
+        <div><h4>Support</h4><a href="contact.html">Contact</a><a href="about.html">About Us</a><a href="faq.html">FAQ</a><a href="privacy.html">Privacy Policy</a></div>
+        <div><h4>Follow Us</h4><a href="#"><i class="fab fa-facebook"></i> Facebook</a><a href="#"><i class="fab fa-instagram"></i> Instagram</a><a href="#"><i class="fab fa-twitter"></i> Twitter</a></div>
+      </div>
+      <div class="bottom">&copy; 2026 ShopVerse. All rights reserved.</div>
+    </div>
+  </footer>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script>
+    async function loadCart() {
+      const items = await Cart.getCart();
+      const container = document.getElementById('cartContent');
+      if (!items.length) {
+        container.innerHTML = `<div class="cart-empty"><i class="fas fa-shopping-cart" style="font-size:64px;color:var(--border)"></i><h2>Your cart is empty</h2><p style="color:var(--text-secondary)">Browse products and add them to your cart</p><a href="products.html" class="btn btn-primary" style="margin-top:16px">Continue Shopping</a></div>`;
+        return;
+      }
+      const subtotal = items.reduce((s, i) => s + (i.product.salePrice || i.product.price) * i.quantity, 0);
+      const tax = subtotal * 0.05;
+      const shipping = subtotal > 499 ? 0 : 40;
+      container.innerHTML = `
+        <div class="cart-layout">
+          <div>${items.map(i => `
+            <div class="cart-item fade-in">
+              <img src="${i.product.images?.[0] || i.product.image || 'https://via.placeholder.com/100'}" alt="${i.product.name}" loading="lazy">
+              <div class="details">
+                <h3>${i.product.name}</h3>
+                <div class="price">${App.formatPrice((i.product.salePrice || i.product.price))}</div>
+                <div class="qty">
+                  <button onclick="Cart.updateQuantity('${i.productId}', ${i.quantity - 1})">-</button>
+                  <span>${i.quantity}</span>
+                  <button onclick="Cart.updateQuantity('${i.productId}', ${i.quantity + 1})">+</button>
+                </div>
+                <button class="remove" onclick="Cart.remove('${i.productId}')"><i class="fas fa-trash"></i> Remove</button>
+              </div>
+            </div>
+          `).join('')}</div>
+          <div class="cart-summary">
+            <h3>Order Summary</h3>
+            <div class="row"><span>Subtotal</span><span>${App.formatPrice(subtotal)}</span></div>
+            <div class="row"><span>Tax (5%)</span><span>${App.formatPrice(tax)}</span></div>
+            <div class="row"><span>Shipping</span><span>${shipping === 0 ? 'Free' : App.formatPrice(shipping)}</span></div>
+            <div class="row total"><span>Total</span><span>${App.formatPrice(subtotal + tax + shipping)}</span></div>
+            <a href="checkout.html" class="btn btn-primary btn-lg">Proceed to Checkout</a>
+            <a href="products.html" style="display:block;text-align:center;margin-top:12px;color:var(--text-secondary);text-decoration:none">Continue Shopping</a>
+          </div>
+        </div>`;
+    }
+    auth.onAuthStateChanged(user => { if (!user) { document.getElementById('cartContent').innerHTML = '<div class="cart-empty"><h2>Please login to view cart</h2><a href="login.html" class="btn btn-primary" style="margin-top:16px">Login</a></div>'; } else loadCart(); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Categories - ShopVerse</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">Shop<span>Verse</span></a>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+      <div class="nav-links" id="navLinks">
+        <a href="index.html">Home</a>
+        <a href="products.html">Products</a>
+        <a href="categories.html">Categories</a>
+        <a href="orders.html">Orders</a>
+        <a href="admin/dashboard.html" class="nav-admin" style="display:none">Admin</a>
+      </div>
+      <div class="nav-icons">
+        <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        <a href="search.html"><i class="fas fa-search"></i></a>
+        <a href="wishlist.html"><i class="fas fa-heart"></i><span class="count wishlist-count">0</span></a>
+        <a href="cart.html"><i class="fas fa-shopping-cart"></i><span class="count cart-count">0</span></a>
+        <a href="login.html" class="nav-login"><i class="fas fa-user"></i></a>
+        <a href="profile.html" class="nav-user" style="display:none"><i class="fas fa-user"></i></a>
+      </div>
+    </div>
+  </nav>
+  <div class="container" style="padding-top:120px;padding-bottom:60px;min-height:80vh">
+    <h1 style="font-size:28px;font-weight:800;margin-bottom:32px">Categories</h1>
+    <div id="categoryContent">
+      <div class="grid grid-4" id="categoriesGrid"></div>
+      <div class="grid grid-4" id="categoryProducts" style="margin-top:32px"></div>
+    </div>
+  </div>
+  <footer class="footer">
+    <div class="container">
+      <div class="grid">
+        <div><h4>ShopVerse</h4><p style="color:var(--text-secondary)">Your premium shopping destination.</p></div>
+        <div><h4>Quick Links</h4><a href="products.html">Products</a><a href="categories.html">Categories</a><a href="cart.html">Cart</a><a href="orders.html">Orders</a></div>
+        <div><h4>Support</h4><a href="contact.html">Contact</a><a href="about.html">About Us</a><a href="faq.html">FAQ</a><a href="privacy.html">Privacy Policy</a></div>
+        <div><h4>Follow Us</h4><a href="#"><i class="fab fa-facebook"></i> Facebook</a><a href="#"><i class="fab fa-instagram"></i> Instagram</a><a href="#"><i class="fab fa-twitter"></i> Twitter</a></div>
+      </div>
+      <div class="bottom">&copy; 2026 ShopVerse. All rights reserved.</div>
+    </div>
+  </footer>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/products.js"></script>
+  <script>
+    async function loadCategories() {
+      const snap = await db.ref('categories').once('value');
+      const grid = document.getElementById('categoriesGrid');
+      if (!snap.val()) { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center">No categories</p>'; return; }
+      grid.innerHTML = Object.entries(snap.val()).map(([id, c]) => `
+        <div class="card fade-in" style="text-align:center;cursor:pointer" onclick="showCategory('${id}')">
+          <div style="font-size:48px;margin-bottom:12px">${c.icon || '📦'}</div>
+          <h3>${c.name}</h3>
+          <p style="color:var(--text-secondary);font-size:13px">${c.description || ''}</p>
+        </div>
+      `).join('');
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('cat')) showCategory(params.get('cat'));
+    }
+
+    async function showCategory(catId) {
+      const snap = await db.ref('products').once('value');
+      const catSnap = await db.ref(`categories/${catId}`).once('value');
+      const catName = catSnap.val()?.name || 'Category';
+      const products = snap.val() ? Object.entries(snap.val()).filter(([, p]) => p.category === catId && p.status === 'active') : [];
+      const grid = document.getElementById('categoryProducts');
+      if (!products.length) { grid.innerHTML = `<h2 style="grid-column:1/-1">${catName}</h2><p style="grid-column:1/-1">No products in this category</p>`; return; }
+      grid.innerHTML = `<h2 style="grid-column:1/-1">${catName}</h2>` + products.map(([id, p]) => Products.renderCard({ id, ...p })).join('');
+      grid.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadCategories);
+  </script>
+</body>
+</html>

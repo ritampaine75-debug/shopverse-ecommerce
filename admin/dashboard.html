@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a href="dashboard.html" class="logo">Shop<span>Verse</span> <span style="font-size:10px;color:var(--accent)">Admin</span></a>
+      <a href="dashboard.html" class="nav-item active"><i class="fas fa-chart-line"></i> Dashboard</a>
+      <a href="products.html" class="nav-item"><i class="fas fa-box"></i> Products</a>
+      <a href="categories.html" class="nav-item"><i class="fas fa-tags"></i> Categories</a>
+      <a href="orders.html" class="nav-item"><i class="fas fa-truck"></i> Orders</a>
+      <a href="users.html" class="nav-item"><i class="fas fa-users"></i> Users</a>
+      <a href="reviews.html" class="nav-item"><i class="fas fa-star"></i> Reviews</a>
+      <a href="coupons.html" class="nav-item"><i class="fas fa-percent"></i> Coupons</a>
+      <a href="banners.html" class="nav-item"><i class="fas fa-images"></i> Banners</a>
+      <a href="analytics.html" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+      <div class="nav-divider"></div>
+      <a href="settings.html" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+      <a href="../index.html" class="nav-item"><i class="fas fa-store"></i> View Store</a>
+      <a href="#" class="nav-item" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+    <div class="admin-overlay" id="adminOverlay" onclick="document.getElementById('adminSidebar').classList.remove('open');this.classList.remove('show')"></div>
+    <div class="admin-main">
+      <header class="admin-header">
+        <button class="btn btn-sm btn-secondary" onclick="document.getElementById('adminSidebar').classList.toggle('open');document.getElementById('adminOverlay').classList.toggle('show')" style="display:none"><i class="fas fa-bars"></i></button>
+        <h1 class="page-title">Dashboard</h1>
+        <div class="admin-actions">
+          <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+          <span id="adminName"></span>
+        </div>
+      </header>
+
+      <div class="admin-stats" id="statsGrid"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+        <div class="form-card">
+          <h3 style="margin-bottom:16px">Recent Orders</h3>
+          <div id="recentOrders"></div>
+        </div>
+        <div class="form-card">
+          <h3 style="margin-bottom:16px">Low Stock Products</h3>
+          <div id="lowStock"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    auth.onAuthStateChanged(async user => {
+      if (!Admin.checkAuth()) return;
+      document.getElementById('adminName').textContent = user.email;
+      const stats = await Admin.getStats();
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card"><div class="icon">💰</div><div class="value">${App.formatPrice(stats.totalRevenue)}</div><div class="label">Total Revenue</div></div>
+        <div class="stat-card"><div class="icon">📦</div><div class="value">${stats.totalOrders}</div><div class="label">Total Orders</div></div>
+        <div class="stat-card"><div class="icon">📱</div><div class="value">${stats.totalProducts}</div><div class="label">Total Products</div></div>
+        <div class="stat-card"><div class="icon">👥</div><div class="value">${stats.totalUsers}</div><div class="label">Total Users</div></div>
+      `;
+      const recent = stats.ordersArr.sort((a,b) => b.createdAt - a.createdAt).slice(0,5);
+      document.getElementById('recentOrders').innerHTML = recent.length ? recent.map(o => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px">
+          <span>#${o.id?.slice(-8)}</span>
+          <span class="badge" style="background:${Orders.statusColor(o.status)};color:#fff">${o.status}</span>
+          <span>${App.formatPrice(o.total)}</span>
+        </div>
+      `).join('') : '<p>No orders yet</p>';
+      const low = stats.products.filter(p => p.stock < 10);
+      document.getElementById('lowStock').innerHTML = low.length ? low.map(p => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px">
+          <span>${p.name}</span>
+          <span style="color:${p.stock < 5 ? '#e17055' : '#fdcb6e'};font-weight:600">${p.stock} units</span>
+        </div>
+      `).join('') : '<p>All products well stocked</p>';
+    });
+  </script>
+</body>
+</html>

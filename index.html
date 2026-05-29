@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopVerse - Premium E-Commerce</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6c5ce7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="icon" href="assets/icons/icon-192.svg" sizes="192x192" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">Shop<span>Verse</span></a>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+      <div class="nav-links" id="navLinks">
+        <a href="index.html" class="active">Home</a>
+        <a href="products.html">Products</a>
+        <a href="categories.html">Categories</a>
+        <a href="orders.html">Orders</a>
+        <a href="admin/dashboard.html" class="nav-admin" style="display:none">Admin</a>
+      </div>
+      <div class="nav-icons">
+        <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        <a href="search.html"><i class="fas fa-search"></i></a>
+        <a href="wishlist.html"><i class="fas fa-heart"></i><span class="count wishlist-count">0</span></a>
+        <a href="cart.html"><i class="fas fa-shopping-cart"></i><span class="count cart-count">0</span></a>
+        <a href="login.html" class="nav-login"><i class="fas fa-user"></i></a>
+        <a href="profile.html" class="nav-user" style="display:none"><i class="fas fa-user"></i></a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-bg"><div></div><div></div></div>
+    <div class="container">
+      <h1 data-i18n="hero_title">Discover Premium Products</h1>
+      <p data-i18n="hero_desc">Shop the latest trends with unbeatable prices. Premium quality, fast delivery.</p>
+      <div class="search-bar">
+        <input type="text" class="input" id="heroSearch" placeholder="Search products..." onkeypress="if(event.key==='Enter') window.location.href='search.html?q='+this.value">
+        <button class="btn btn-primary" onclick="window.location.href='search.html?q='+document.getElementById('heroSearch').value"><i class="fas fa-search"></i> Search</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="categoriesSection">
+    <div class="container">
+      <h2 class="section-title">Shop by Category</h2>
+      <div class="grid grid-4" id="categoriesGrid"></div>
+    </div>
+  </section>
+
+  <section class="section" style="background:var(--bg-secondary)" id="featuredSection">
+    <div class="container">
+      <h2 class="section-title">Featured Products</h2>
+      <div class="grid grid-4" id="featuredGrid"></div>
+    </div>
+  </section>
+
+  <section class="section" id="flashSale">
+    <div class="container">
+      <h2 class="section-title">🔥 Flash Sale</h2>
+      <div class="grid grid-4" id="flashGrid"></div>
+    </div>
+  </section>
+
+  <section class="section" style="background:var(--bg-secondary)" id="newArrivals">
+    <div class="container">
+      <h2 class="section-title">New Arrivals</h2>
+      <div class="grid grid-4" id="newGrid"></div>
+    </div>
+  </section>
+
+  <section class="section" id="bannerSection">
+    <div class="container" id="bannerContainer"></div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="grid">
+        <div><h4>ShopVerse</h4><p style="color:var(--text-secondary)">Your premium shopping destination.</p></div>
+        <div><h4>Quick Links</h4><a href="products.html">Products</a><a href="categories.html">Categories</a><a href="cart.html">Cart</a><a href="orders.html">Orders</a></div>
+        <div><h4>Support</h4><a href="contact.html">Contact</a><a href="about.html">About Us</a><a href="faq.html">FAQ</a><a href="privacy.html">Privacy Policy</a></div>
+        <div><h4>Follow Us</h4><a href="#"><i class="fab fa-facebook"></i> Facebook</a><a href="#"><i class="fab fa-instagram"></i> Instagram</a><a href="#"><i class="fab fa-twitter"></i> Twitter</a></div>
+      </div>
+      <div class="bottom">&copy; 2026 ShopVerse. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/products.js"></script>
+  <script>
+    async function loadHome() {
+      try {
+        const [catSnap, prodSnap, bannerSnap] = await Promise.all([
+          db.ref('categories').limitToFirst(8).once('value'),
+          db.ref('products').orderByChild('status').equalTo('active').once('value'),
+          db.ref('banners').once('value')
+        ]);
+        const categories = catSnap.val();
+        const products = prodSnap.val();
+        const banners = bannerSnap.val();
+        const catGrid = document.getElementById('categoriesGrid');
+        const featGrid = document.getElementById('featuredGrid');
+        const flashGrid = document.getElementById('flashGrid');
+        const newGrid = document.getElementById('newGrid');
+
+        if (categories) {
+          catGrid.innerHTML = Object.entries(categories).slice(0, 8).map(([id, c]) => `
+            <div class="card fade-in" style="text-align:center;cursor:pointer" onclick="window.location.href='categories.html?cat=${id}'">
+              <div style="font-size:48px;margin-bottom:12px">${c.icon || '📦'}</div>
+              <h3>${c.name}</h3>
+            </div>
+          `).join('');
+        }
+
+        if (products) {
+          const items = Object.entries(products);
+          const featured = items.slice(0, 8);
+          const flash = items.filter(([,p]) => p.discount > 20).slice(0, 4);
+          const newest = items.sort(([,a],[,b]) => (b.createdAt||0) - (a.createdAt||0)).slice(0, 8);
+
+          const renderProduct = ([id, p]) => `
+            <div class="product-card fade-in" onclick="window.location.href='product.html?id=${id}'">
+              <img class="image" src="${p.images?.[0] || p.image || 'https://via.placeholder.com/300'}" alt="${p.name}" loading="lazy">
+              <div class="info">
+                <h3>${p.name}</h3>
+                <div class="rating">${'★'.repeat(Math.round(p.rating||0))}${'☆'.repeat(5-Math.round(p.rating||0))} <span style="color:var(--text-secondary);font-size:12px">(${p.reviews||0})</span></div>
+                <div class="price">${App.formatPrice(p.salePrice || p.price)} ${p.salePrice ? `<span class="old">${App.formatPrice(p.price)}</span>` : ''}</div>
+                <div class="actions">
+                  <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();Cart.add('${id}')"><i class="fas fa-shopping-cart"></i></button>
+                  <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();Wishlist.toggle('${id}')"><i class="fas fa-heart"></i></button>
+                </div>
+              </div>
+            </div>
+          `;
+
+          featGrid.innerHTML = featured.map(renderProduct).join('');
+          flashGrid.innerHTML = flash.length ? flash.map(renderProduct).join('') : '<p style="grid-column:1/-1;text-align:center">No flash deals right now</p>';
+          newGrid.innerHTML = newest.map(renderProduct).join('');
+        }
+
+        if (banners) {
+          const container = document.getElementById('bannerContainer');
+          container.innerHTML = Object.entries(banners).map(([id, b]) => `
+            <div class="card fade-in" style="padding:0;overflow:hidden;margin-bottom:16px;cursor:pointer" onclick="${b.link ? `window.location.href='${b.link}'` : ''}">
+              <img src="${b.image}" alt="${b.title||''}" style="width:100%;height:200px;object-fit:cover">
+            </div>
+          `).join('');
+        }
+      } catch (err) { console.error('Home load error:', err); }
+    }
+    document.addEventListener('DOMContentLoaded', loadHome);
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
+    }
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
+  </script>
+</body>
+</html>

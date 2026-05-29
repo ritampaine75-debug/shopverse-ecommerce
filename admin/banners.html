@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banners - Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a href="dashboard.html" class="logo">Shop<span>Verse</span> <span style="font-size:10px;color:var(--accent)">Admin</span></a>
+      <a href="dashboard.html" class="nav-item"><i class="fas fa-chart-line"></i> Dashboard</a>
+      <a href="products.html" class="nav-item"><i class="fas fa-box"></i> Products</a>
+      <a href="categories.html" class="nav-item"><i class="fas fa-tags"></i> Categories</a>
+      <a href="orders.html" class="nav-item"><i class="fas fa-truck"></i> Orders</a>
+      <a href="users.html" class="nav-item"><i class="fas fa-users"></i> Users</a>
+      <a href="reviews.html" class="nav-item"><i class="fas fa-star"></i> Reviews</a>
+      <a href="coupons.html" class="nav-item"><i class="fas fa-percent"></i> Coupons</a>
+      <a href="banners.html" class="nav-item active"><i class="fas fa-images"></i> Banners</a>
+      <a href="analytics.html" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+      <div class="nav-divider"></div>
+      <a href="settings.html" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+      <a href="../index.html" class="nav-item"><i class="fas fa-store"></i> View Store</a>
+      <a href="#" class="nav-item" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+    <div class="admin-overlay" id="adminOverlay" onclick="document.getElementById('adminSidebar').classList.remove('open');this.classList.remove('show')"></div>
+    <div class="admin-main">
+      <header class="admin-header">
+        <h1 class="page-title">Banners</h1>
+        <div class="admin-actions">
+          <button class="btn btn-primary btn-sm" onclick="openBannerModal()"><i class="fas fa-plus"></i> Add Banner</button>
+          <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        </div>
+      </header>
+      <div class="banner-grid" id="bannersGrid"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="bannerModal">
+    <div class="modal-backdrop" onclick="closeBannerModal()"></div>
+    <div class="modal-content modal-content-sm">
+      <div class="modal-header">
+        <h3 id="bannerModalTitle">Add Banner</h3>
+        <button class="modal-close" onclick="closeBannerModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Banner Title</label>
+          <input type="text" id="bannerTitle" class="input" placeholder="e.g. Summer Sale" required>
+        </div>
+        <div class="form-group">
+          <label>Banner Image</label>
+          <input type="file" id="bannerImage" class="input" accept="image/*" onchange="previewBannerImage(event)">
+          <div id="bannerImagePreview" style="margin-top:8px"></div>
+        </div>
+        <div class="form-group">
+          <label>Link URL</label>
+          <input type="url" id="bannerLink" class="input" placeholder="e.g. /products or https://...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeBannerModal()">Cancel</button>
+        <button class="btn btn-primary" id="bannerSaveBtn" onclick="saveBanner()">Create Banner</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    let allBanners = [];
+
+    auth.onAuthStateChanged(async user => {
+      if (!Admin.checkAuth()) return;
+      const snap = await db.ref('banners').once('value');
+      if (snap.val()) allBanners = Object.entries(snap.val()).map(([id, b]) => ({ id, ...b }));
+      renderBanners();
+    });
+
+    function renderBanners() {
+      document.getElementById('bannersGrid').innerHTML = allBanners.map(b => `
+        <div class="banner-card">
+          <div class="banner-card-img">
+            <img src="${b.image}" alt="${b.title}" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
+          </div>
+          <div class="banner-card-body">
+            <h3>${b.title || 'Untitled'}</h3>
+            ${b.link ? `<a href="${b.link}" target="_blank" class="banner-card-link">${b.link}</a>` : ''}
+            <span class="banner-card-date">${b.createdAt ? new Date(b.createdAt).toLocaleDateString() : ''}</span>
+          </div>
+          <div class="banner-card-actions">
+            <button class="btn btn-sm btn-danger" onclick="deleteBanner('${b.id}')"><i class="fas fa-trash"></i> Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    let uploadedFile = null;
+
+    function previewBannerImage(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      uploadedFile = file;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        document.getElementById('bannerImagePreview').innerHTML = `<img src="${ev.target.result}" style="max-width:100%;max-height:200px;border-radius:8px;object-fit:cover">`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openBannerModal() {
+      document.getElementById('bannerModalTitle').textContent = 'Add Banner';
+      document.getElementById('bannerSaveBtn').textContent = 'Create Banner';
+      document.getElementById('bannerTitle').value = '';
+      document.getElementById('bannerImage').value = '';
+      document.getElementById('bannerLink').value = '';
+      document.getElementById('bannerImagePreview').innerHTML = '';
+      uploadedFile = null;
+      document.getElementById('bannerModal').classList.add('show');
+    }
+
+    function closeBannerModal() {
+      document.getElementById('bannerModal').classList.remove('show');
+      uploadedFile = null;
+    }
+
+    async function saveBanner() {
+      const title = document.getElementById('bannerTitle').value.trim();
+      const link = document.getElementById('bannerLink').value.trim();
+
+      if (!title) return App.showToast('Banner title is required', 'error');
+      if (!uploadedFile) return App.showToast('Please select an image', 'error');
+
+      document.getElementById('bannerSaveBtn').disabled = true;
+      document.getElementById('bannerSaveBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+      try {
+        const imageUrl = await Admin.uploadImage(uploadedFile, 'banners');
+        const data = { title, image: imageUrl, link };
+        const key = await Admin.addBanner(data);
+        allBanners.push({ id: key, ...data, createdAt: Date.now() });
+        closeBannerModal();
+        renderBanners();
+        App.showToast('Banner created', 'success');
+      } catch (err) {
+        App.showToast('Failed to upload banner', 'error');
+      }
+
+      document.getElementById('bannerSaveBtn').disabled = false;
+      document.getElementById('bannerSaveBtn').innerHTML = 'Create Banner';
+    }
+
+    async function deleteBanner(id) {
+      if (!confirm('Delete this banner?')) return;
+      await Admin.deleteBanner(id);
+      allBanners = allBanners.filter(b => b.id !== id);
+      renderBanners();
+      App.showToast('Banner deleted', 'info');
+    }
+  </script>
+</body>
+</html>

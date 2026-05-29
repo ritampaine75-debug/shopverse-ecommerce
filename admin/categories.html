@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Categories - Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a href="dashboard.html" class="logo">Shop<span>Verse</span> <span style="font-size:10px;color:var(--accent)">Admin</span></a>
+      <a href="dashboard.html" class="nav-item"><i class="fas fa-chart-line"></i> Dashboard</a>
+      <a href="products.html" class="nav-item"><i class="fas fa-box"></i> Products</a>
+      <a href="categories.html" class="nav-item active"><i class="fas fa-tags"></i> Categories</a>
+      <a href="orders.html" class="nav-item"><i class="fas fa-truck"></i> Orders</a>
+      <a href="users.html" class="nav-item"><i class="fas fa-users"></i> Users</a>
+      <a href="reviews.html" class="nav-item"><i class="fas fa-star"></i> Reviews</a>
+      <a href="coupons.html" class="nav-item"><i class="fas fa-percent"></i> Coupons</a>
+      <a href="banners.html" class="nav-item"><i class="fas fa-images"></i> Banners</a>
+      <a href="analytics.html" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+      <div class="nav-divider"></div>
+      <a href="settings.html" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+      <a href="../index.html" class="nav-item"><i class="fas fa-store"></i> View Store</a>
+      <a href="#" class="nav-item" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+    <div class="admin-overlay" id="adminOverlay" onclick="document.getElementById('adminSidebar').classList.remove('open');this.classList.remove('show')"></div>
+    <div class="admin-main">
+      <header class="admin-header">
+        <h1 class="page-title">Categories</h1>
+        <div class="admin-actions">
+          <button class="btn btn-primary btn-sm" onclick="openCategoryModal()"><i class="fas fa-plus"></i> Add Category</button>
+          <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        </div>
+      </header>
+      <div style="margin-bottom:16px"><input type="text" id="searchCategories" class="input" style="max-width:300px" placeholder="Search categories..." oninput="renderCategories()"></div>
+      <div class="category-grid" id="categoriesGrid"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="categoryModal">
+    <div class="modal-backdrop" onclick="closeCategoryModal()"></div>
+    <div class="modal-content modal-content-sm">
+      <div class="modal-header">
+        <h3 id="categoryModalTitle">Add Category</h3>
+        <button class="modal-close" onclick="closeCategoryModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Category Name</label>
+          <input type="text" id="categoryName" class="input" placeholder="e.g. Electronics" required>
+        </div>
+        <div class="form-group">
+          <label>Icon (Emoji)</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="categoryIcon" class="input" placeholder="e.g. 💻" style="flex:1" maxlength="10">
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <span class="emoji-option" onclick="pickEmoji('💻')">💻</span>
+              <span class="emoji-option" onclick="pickEmoji('👕')">👕</span>
+              <span class="emoji-option" onclick="pickEmoji('📚')">📚</span>
+              <span class="emoji-option" onclick="pickEmoji('🏠')">🏠</span>
+              <span class="emoji-option" onclick="pickEmoji('🎮')">🎮</span>
+              <span class="emoji-option" onclick="pickEmoji('💊')">💊</span>
+              <span class="emoji-option" onclick="pickEmoji('🔧')">🔧</span>
+              <span class="emoji-option" onclick="pickEmoji('🎵')">🎵</span>
+              <span class="emoji-option" onclick="pickEmoji('📱')">📱</span>
+              <span class="emoji-option" onclick="pickEmoji('⌚')">⌚</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="categoryDescription" class="input" rows="3" placeholder="Short description..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeCategoryModal()">Cancel</button>
+        <button class="btn btn-primary" id="categorySaveBtn" onclick="saveCategory()">Create Category</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    let allCategories = [];
+    let productCountMap = {};
+    let editingCategoryId = null;
+
+    auth.onAuthStateChanged(async user => {
+      if (!Admin.checkAuth()) return;
+      const [catSnap, prodSnap] = await Promise.all([
+        db.ref('categories').once('value'),
+        db.ref('products').once('value')
+      ]);
+      if (prodSnap.val()) {
+        productCountMap = {};
+        Object.values(prodSnap.val()).forEach(p => {
+          if (p.category) productCountMap[p.category] = (productCountMap[p.category] || 0) + 1;
+        });
+      }
+      if (catSnap.val()) allCategories = Object.entries(catSnap.val()).map(([id, c]) => ({ id, ...c }));
+      renderCategories();
+    });
+
+    function renderCategories() {
+      const q = document.getElementById('searchCategories').value.toLowerCase();
+      const filtered = allCategories.filter(c => (c.name || '').toLowerCase().includes(q));
+      document.getElementById('categoriesGrid').innerHTML = filtered.map(c => `
+        <div class="category-card">
+          <div class="category-card-icon">${c.icon || '📁'}</div>
+          <h3 class="category-card-name">${c.name}</h3>
+          <p class="category-card-desc">${c.description || ''}</p>
+          <span class="category-card-count">${productCountMap[c.id] || 0} products</span>
+          <div class="category-card-actions">
+            <button class="btn btn-sm btn-secondary" onclick="editCategory('${c.id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-sm btn-danger" onclick="deleteCategory('${c.id}')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function pickEmoji(emoji) {
+      document.getElementById('categoryIcon').value = emoji;
+    }
+
+    function openCategoryModal(category) {
+      editingCategoryId = category ? category.id : null;
+      document.getElementById('categoryModalTitle').textContent = category ? 'Edit Category' : 'Add Category';
+      document.getElementById('categorySaveBtn').textContent = category ? 'Update Category' : 'Create Category';
+      document.getElementById('categoryName').value = category ? category.name : '';
+      document.getElementById('categoryIcon').value = category ? category.icon || '' : '';
+      document.getElementById('categoryDescription').value = category ? category.description || '' : '';
+      document.getElementById('categoryModal').classList.add('show');
+    }
+
+    function editCategory(id) {
+      const c = allCategories.find(x => x.id === id);
+      if (c) openCategoryModal(c);
+    }
+
+    function closeCategoryModal() {
+      document.getElementById('categoryModal').classList.remove('show');
+      editingCategoryId = null;
+    }
+
+    async function saveCategory() {
+      const name = document.getElementById('categoryName').value.trim();
+      const icon = document.getElementById('categoryIcon').value.trim() || '📁';
+      const description = document.getElementById('categoryDescription').value.trim();
+
+      if (!name) return App.showToast('Category name is required', 'error');
+
+      const data = { name, icon, description };
+
+      if (editingCategoryId) {
+        await Admin.updateCategory(editingCategoryId, data);
+        const c = allCategories.find(x => x.id === editingCategoryId);
+        if (c) Object.assign(c, data);
+        App.showToast('Category updated', 'success');
+      } else {
+        const key = await Admin.addCategory(data);
+        allCategories.push({ id: key, ...data });
+        App.showToast('Category created', 'success');
+      }
+      closeCategoryModal();
+      renderCategories();
+    }
+
+    async function deleteCategory(id) {
+      if (!confirm('Delete this category?')) return;
+      await Admin.deleteCategory(id);
+      allCategories = allCategories.filter(c => c.id !== id);
+      renderCategories();
+      App.showToast('Category deleted', 'info');
+    }
+  </script>
+</body>
+</html>

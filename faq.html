@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ - ShopVerse</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/darkmode.css">
+  <style>
+    .faq-item { border-bottom: 1px solid var(--border); }
+    .faq-question { width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;background:none;border:none;cursor:pointer;font-size:16px;font-weight:600;color:var(--text);text-align:left;gap:12px }
+    .faq-question:hover { color:var(--accent) }
+    .faq-question i { transition:transform 0.3s;font-size:14px;color:var(--accent);flex-shrink:0 }
+    .faq-item.active .faq-question i { transform:rotate(180deg) }
+    .faq-answer { max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.3s ease;padding:0 }
+    .faq-item.active .faq-answer { max-height:300px;padding:0 0 18px 0 }
+    .faq-answer p { color:var(--text-secondary);line-height:1.7;margin:0 }
+  </style>
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">Shop<span>Verse</span></a>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+      <div class="nav-links" id="navLinks">
+        <a href="index.html">Home</a>
+        <a href="products.html">Products</a>
+        <a href="categories.html">Categories</a>
+        <a href="orders.html">Orders</a>
+        <a href="admin/dashboard.html" class="nav-admin" style="display:none">Admin</a>
+      </div>
+      <div class="nav-icons">
+        <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        <a href="search.html"><i class="fas fa-search"></i></a>
+        <a href="wishlist.html"><i class="fas fa-heart"></i><span class="count wishlist-count">0</span></a>
+        <a href="cart.html"><i class="fas fa-shopping-cart"></i><span class="count cart-count">0</span></a>
+        <a href="login.html" class="nav-login"><i class="fas fa-user"></i></a>
+        <a href="profile.html" class="nav-user" style="display:none"><i class="fas fa-user"></i></a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="section" style="padding-top:120px;padding-bottom:60px">
+    <div class="container">
+      <h1 class="section-title" style="margin-bottom:40px">Frequently Asked Questions</h1>
+      <div class="card" style="padding:32px;max-width:800px;margin:0 auto">
+        <div class="faq-item active">
+          <button class="faq-question">How do I place an order? <i class="fas fa-chevron-down"></i></button>
+          <div class="faq-answer"><p>Simply browse our products, add items to your cart, and proceed to checkout. You'll need to create an account or log in, enter your shipping details, choose a payment method, and confirm your order.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">What payment methods do you accept? <i class="fas fa-chevron-down"></i></button>
+          <div class="faq-answer"><p>We accept Visa, MasterCard, American Express, PayPal, Apple Pay, Google Pay, and major debit cards. All transactions are secured with encryption.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">How long does shipping take? <i class="fas fa-chevron-down"></i></button>
+          <div class="faq-answer"><p>Standard shipping takes 5-7 business days within the US. Express shipping (2-3 business days) and next-day delivery are available at checkout. International orders typically take 10-14 business days.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">What is your return policy? <i class="fas fa-chevron-down"></i></button>
+          <div class="faq-answer"><p>We offer a 30-day return policy from the date of delivery. Items must be unused, in original packaging, and accompanied by a receipt. See our <a href="return-policy.html">Return Policy</a> page for full details.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">How do I track my order? <i class="fas fa-chevron-down"></i></button>
+          <div class="faq-answer"><p>Once your order ships, you'll receive a tracking number via email. You can also track your order from your account dashboard under the Orders section.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">Can I cancel or modify my order? <i class="fas fa-chevron-down"></i></button>
+          <div class="faq-answer"><p>Orders can be cancelled or modified within 1 hour of placement, provided they haven't been processed yet. Contact our support team immediately if you need to make changes.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">Do you offer international shipping? <i class="fas fa-chevron-down"></i></button>
+          <div class="faq-answer"><p>Yes, we ship to over 30 countries worldwide. Shipping costs and delivery times vary by destination. You can see the estimated shipping cost at checkout before completing your purchase.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">How can I contact customer support? <i class="fas fa-chevron-down"></i></button>
+          <div class="faq-answer"><p>You can reach us via email at shopverse@example.com, call us at +1 234 567 890, or use our <a href="contact.html">Contact Form</a>. Our support team is available Monday-Saturday, 9 AM to 9 PM EST.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">Is my personal information secure? <i class="fas fa-chevron-down"></i></button>
+          <div class="faq-answer"><p>Absolutely. We use industry-standard SSL encryption to protect your data. We never share your personal information with third parties. Read our <a href="privacy.html">Privacy Policy</a> for more details.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question">Do you have a loyalty program? <i class="fas fa-chevron-down"></i></button>
+          <div class="faq-answer"><p>Yes! ShopVerse Rewards lets you earn points on every purchase. Accumulate points and redeem them for discounts on future orders. Sign up for free from your account settings.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="grid">
+        <div><h4>ShopVerse</h4><p style="color:var(--text-secondary)">Your premium shopping destination.</p></div>
+        <div><h4>Quick Links</h4><a href="products.html">Products</a><a href="categories.html">Categories</a><a href="cart.html">Cart</a><a href="orders.html">Orders</a></div>
+        <div><h4>Support</h4><a href="contact.html">Contact</a><a href="about.html">About Us</a><a href="faq.html">FAQ</a><a href="privacy.html">Privacy Policy</a></div>
+        <div><h4>Follow Us</h4><a href="#"><i class="fab fa-facebook"></i> Facebook</a><a href="#"><i class="fab fa-instagram"></i> Instagram</a><a href="#"><i class="fab fa-twitter"></i> Twitter</a></div>
+      </div>
+      <div class="bottom">&copy; 2026 ShopVerse. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.querySelectorAll('.faq-question').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.parentElement;
+        const isActive = item.classList.contains('active');
+        document.querySelectorAll('.faq-item').forEach(el => el.classList.remove('active'));
+        if (!isActive) item.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

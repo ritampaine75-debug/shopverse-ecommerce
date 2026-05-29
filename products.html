@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products - ShopVerse</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">Shop<span>Verse</span></a>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+      <div class="nav-links" id="navLinks">
+        <a href="index.html">Home</a>
+        <a href="products.html" class="active">Products</a>
+        <a href="categories.html">Categories</a>
+        <a href="orders.html">Orders</a>
+        <a href="admin/dashboard.html" class="nav-admin" style="display:none">Admin</a>
+      </div>
+      <div class="nav-icons">
+        <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        <a href="search.html"><i class="fas fa-search"></i></a>
+        <a href="wishlist.html"><i class="fas fa-heart"></i><span class="count wishlist-count">0</span></a>
+        <a href="cart.html"><i class="fas fa-shopping-cart"></i><span class="count cart-count">0</span></a>
+        <a href="login.html" class="nav-login"><i class="fas fa-user"></i></a>
+        <a href="profile.html" class="nav-user" style="display:none"><i class="fas fa-user"></i></a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container" style="padding-top:100px;padding-bottom:60px">
+    <h1 style="font-size:28px;font-weight:800;margin-bottom:24px">All Products</h1>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px">
+      <input type="text" id="searchInput" class="input" style="max-width:300px" placeholder="Search..." oninput="filterProducts()">
+      <select id="catFilter" class="input" style="max-width:200px" onchange="filterProducts()"><option value="">All Categories</option></select>
+      <select id="sortFilter" class="input" style="max-width:200px" onchange="filterProducts()">
+        <option value="newest">Newest</option><option value="price-low">Price: Low to High</option>
+        <option value="price-high">Price: High to Low</option><option value="rating">Top Rated</option>
+      </select>
+    </div>
+    <div class="grid grid-4" id="productsGrid"></div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="grid">
+        <div><h4>ShopVerse</h4><p style="color:var(--text-secondary)">Your premium shopping destination.</p></div>
+        <div><h4>Quick Links</h4><a href="products.html">Products</a><a href="categories.html">Categories</a><a href="cart.html">Cart</a><a href="orders.html">Orders</a></div>
+        <div><h4>Support</h4><a href="contact.html">Contact</a><a href="about.html">About Us</a><a href="faq.html">FAQ</a><a href="privacy.html">Privacy Policy</a></div>
+        <div><h4>Follow Us</h4><a href="#"><i class="fab fa-facebook"></i> Facebook</a><a href="#"><i class="fab fa-instagram"></i> Instagram</a><a href="#"><i class="fab fa-twitter"></i> Twitter</a></div>
+      </div>
+      <div class="bottom">&copy; 2026 ShopVerse. All rights reserved.</div>
+    </div>
+  </footer>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/wishlist.js"></script>
+  <script>
+    let allProducts = [];
+    async function loadProducts() {
+      const snap = await db.ref('products').once('value');
+      const cats = await db.ref('categories').once('value');
+      const catFilter = document.getElementById('catFilter');
+      if (cats.val()) {
+        Object.entries(cats.val()).forEach(([id, c]) => {
+          catFilter.innerHTML += `<option value="${id}">${c.name}</option>`;
+        });
+      }
+      if (snap.val()) {
+        allProducts = Object.entries(snap.val()).map(([id, p]) => ({ id, ...p }));
+        filterProducts();
+      }
+    }
+    function filterProducts() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const cat = document.getElementById('catFilter').value;
+      const sort = document.getElementById('sortFilter').value;
+      let filtered = allProducts.filter(p => {
+        if (cat && p.category !== cat) return false;
+        if (q && !p.name.toLowerCase().includes(q) && !(p.tags||[]).join(' ').toLowerCase().includes(q)) return false;
+        return p.status === 'active';
+      });
+      if (sort === 'price-low') filtered.sort((a,b) => (a.salePrice||a.price) - (b.salePrice||b.price));
+      else if (sort === 'price-high') filtered.sort((a,b) => (b.salePrice||b.price) - (a.salePrice||a.price));
+      else if (sort === 'rating') filtered.sort((a,b) => (b.rating||0) - (a.rating||0));
+      else filtered.sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+      const grid = document.getElementById('productsGrid');
+      if (!filtered.length) { grid.innerHTML = '<p style="grid-column:1/-1;text-align:center">No products found</p>'; return; }
+      grid.innerHTML = filtered.map(p => Products.renderCard(p)).join('');
+    }
+    document.addEventListener('DOMContentLoaded', loadProducts);
+  </script>
+</body>
+</html>

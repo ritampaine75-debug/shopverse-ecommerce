@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout - ShopVerse</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/checkout.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">Shop<span>Verse</span></a>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+      <div class="nav-links" id="navLinks">
+        <a href="index.html">Home</a>
+        <a href="products.html">Products</a>
+        <a href="categories.html">Categories</a>
+        <a href="orders.html">Orders</a>
+        <a href="admin/dashboard.html" class="nav-admin" style="display:none">Admin</a>
+      </div>
+      <div class="nav-icons">
+        <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        <a href="search.html"><i class="fas fa-search"></i></a>
+        <a href="wishlist.html"><i class="fas fa-heart"></i><span class="count wishlist-count">0</span></a>
+        <a href="cart.html"><i class="fas fa-shopping-cart"></i><span class="count cart-count">0</span></a>
+        <a href="login.html" class="nav-login"><i class="fas fa-user"></i></a>
+        <a href="profile.html" class="nav-user" style="display:none"><i class="fas fa-user"></i></a>
+      </div>
+    </div>
+  </nav>
+  <div class="checkout-page">
+    <div class="container">
+      <h1>Checkout</h1>
+      <div class="checkout-layout">
+        <div class="checkout-form">
+          <h3>Shipping Address</h3>
+          <div class="form-row">
+            <div class="form-group"><label>Full Name</label><input type="text" id="addrName" class="input" required></div>
+            <div class="form-group"><label>Phone</label><input type="tel" id="addrPhone" class="input" required></div>
+          </div>
+          <div class="form-group"><label>Address</label><input type="text" id="addrLine" class="input" placeholder="Street, building, apartment" required></div>
+          <div class="form-row">
+            <div class="form-group"><label>City</label><input type="text" id="addrCity" class="input" required></div>
+            <div class="form-group"><label>State</label><input type="text" id="addrState" class="input" required></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Pincode</label><input type="text" id="addrPincode" class="input" required></div>
+            <div class="form-group"><label>Country</label><input type="text" id="addrCountry" class="input" value="India" required></div>
+          </div>
+          <div class="form-group"><label>Order Notes (optional)</label><textarea id="orderNotes" class="input" rows="3"></textarea></div>
+
+          <h3 style="margin-top:24px">Coupon</h3>
+          <div class="coupon">
+            <input type="text" id="couponInput" class="input" placeholder="Enter coupon code">
+            <button class="btn btn-secondary" onclick="applyCoupon()">Apply</button>
+          </div>
+          <div id="couponMessage" style="margin-top:8px;font-size:14px"></div>
+
+          <h3 style="margin-top:24px">Payment Method</h3>
+          <div class="payment-methods">
+            <label class="payment-method selected"><input type="radio" name="payment" value="cod" checked> Cash on Delivery</label>
+            <label class="payment-method"><input type="radio" name="payment" value="upi"> UPI Payment</label>
+          </div>
+        </div>
+        <div class="checkout-order" id="orderSummary"><h3>Order Summary</h3><div id="orderItems"></div><div id="orderTotals"></div><button class="btn btn-primary btn-lg" onclick="placeOrder()">Place Order</button></div>
+      </div>
+    </div>
+  </div>
+  <footer class="footer">
+    <div class="container">
+      <div class="grid">
+        <div><h4>ShopVerse</h4><p style="color:var(--text-secondary)">Your premium shopping destination.</p></div>
+        <div><h4>Quick Links</h4><a href="products.html">Products</a><a href="categories.html">Categories</a><a href="cart.html">Cart</a><a href="orders.html">Orders</a></div>
+        <div><h4>Support</h4><a href="contact.html">Contact</a><a href="about.html">About Us</a><a href="faq.html">FAQ</a><a href="privacy.html">Privacy Policy</a></div>
+        <div><h4>Follow Us</h4><a href="#"><i class="fab fa-facebook"></i> Facebook</a><a href="#"><i class="fab fa-instagram"></i> Instagram</a><a href="#"><i class="fab fa-twitter"></i> Twitter</a></div>
+      </div>
+      <div class="bottom">&copy; 2026 ShopVerse. All rights reserved.</div>
+    </div>
+  </footer>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/checkout.js"></script>
+  <script>
+    let appliedCoupon = null;
+
+    document.querySelectorAll('.payment-method').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.payment-method').forEach(e => e.classList.remove('selected'));
+        el.classList.add('selected');
+        el.querySelector('input[type="radio"]').checked = true;
+      });
+    });
+
+    async function loadCheckout() {
+      const user = auth.currentUser;
+      if (!user) { App.showToast('Please login', 'error'); window.location.href = 'login.html'; return; }
+      const items = await Cart.getCart();
+      if (!items.length) { window.location.href = 'cart.html'; return; }
+
+      const addrSnap = await db.ref(`users/${user.uid}/addresses`).once('value');
+      const addrs = addrSnap.val();
+      if (addrs) {
+        const lastAddr = Object.values(addrs).pop();
+        if (lastAddr) {
+          document.getElementById('addrName').value = lastAddr.name || '';
+          document.getElementById('addrPhone').value = lastAddr.phone || '';
+          document.getElementById('addrLine').value = lastAddr.line || '';
+          document.getElementById('addrCity').value = lastAddr.city || '';
+          document.getElementById('addrState').value = lastAddr.state || '';
+          document.getElementById('addrPincode').value = lastAddr.pincode || '';
+          document.getElementById('addrCountry').value = lastAddr.country || 'India';
+        }
+      }
+
+      updateOrderSummary(items);
+    }
+
+    function updateOrderSummary(items) {
+      const subtotal = items.reduce((s, i) => s + (i.product.salePrice || i.product.price) * i.quantity, 0);
+      const tax = subtotal * 0.05;
+      const shipping = subtotal > 499 ? 0 : 40;
+      const discount = appliedCoupon?.discount || 0;
+
+      document.getElementById('orderItems').innerHTML = items.map(i => `
+        <div class="item">
+          <img src="${i.product.images?.[0] || i.product.image || 'https://via.placeholder.com/50'}" alt="${i.product.name}">
+          <div class="info"><div class="name">${i.product.name}</div><div>Qty: ${i.quantity}</div><div>${App.formatPrice((i.product.salePrice || i.product.price))}</div></div>
+        </div>
+      `).join('');
+
+      document.getElementById('orderTotals').innerHTML = `
+        <div class="row"><span>Subtotal</span><span>${App.formatPrice(subtotal)}</span></div>
+        <div class="row"><span>Tax (5%)</span><span>${App.formatPrice(tax)}</span></div>
+        <div class="row"><span>Shipping</span><span>${shipping === 0 ? 'Free' : App.formatPrice(shipping)}</span></div>
+        ${discount ? `<div class="row" style="color:#00b894"><span>Coupon Discount</span><span>-${App.formatPrice(discount)}</span></div>` : ''}
+        <div class="row total"><span>Total</span><span>${App.formatPrice(subtotal + tax + shipping - discount)}</span></div>
+      `;
+    }
+
+    async function applyCoupon() {
+      const code = document.getElementById('couponInput').value.trim();
+      if (!code) return;
+      const result = await Checkout.validateCoupon(code);
+      const msg = document.getElementById('couponMessage');
+      if (result.valid) {
+        appliedCoupon = result.coupon;
+        msg.innerHTML = `<span style="color:#00b894">Coupon applied! ${result.coupon.discountType === 'percent' ? result.coupon.discount + '% off' : App.formatPrice(result.coupon.discount) + ' off'}</span>`;
+        const items = await Cart.getCart();
+        updateOrderSummary(items);
+      } else {
+        appliedCoupon = null;
+        msg.innerHTML = `<span style="color:#e17055">${result.message}</span>`;
+        const items = await Cart.getCart();
+        updateOrderSummary(items);
+      }
+    }
+
+    async function placeOrder() {
+      const name = document.getElementById('addrName').value;
+      const phone = document.getElementById('addrPhone').value;
+      const line = document.getElementById('addrLine').value;
+      const city = document.getElementById('addrCity').value;
+      const state = document.getElementById('addrState').value;
+      const pincode = document.getElementById('addrPincode').value;
+      const country = document.getElementById('addrCountry').value;
+      if (!name || !phone || !line || !city || !state || !pincode) { App.showToast('Please fill all address fields', 'error'); return; }
+
+      const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+      const cartTotal = await Cart.getTotal();
+      const data = {
+        address: { name, phone, line, city, state, pincode, country },
+        paymentMethod,
+        notes: document.getElementById('orderNotes').value,
+        couponId: appliedCoupon?.id || '',
+        couponCode: appliedCoupon?.code || '',
+        couponDiscount: appliedCoupon?.discountType === 'percent' ? (appliedCoupon.discount / 100) * cartTotal : appliedCoupon?.discount || 0
+      };
+      await Checkout.placeOrder(data);
+    }
+
+    auth.onAuthStateChanged(user => { if (user) loadCheckout(); else window.location.href = 'login.html'; });
+  </script>
+</body>
+</html>

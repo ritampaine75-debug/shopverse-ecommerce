@@ -1,0 +1,33 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 20px 40px;
+  background: linear-gradient(135deg, var(--bg), var(--bg-secondary));
+}
+.auth-container {
+  width: 100%;
+  max-width: 440px;
+}
+.auth-box {
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 40px;
+  animation: scaleIn 0.4s ease;
+}
+.auth-box h2 { font-size: 28px; font-weight: 800; margin-bottom: 8px; text-align: center; }
+.auth-box .subtitle { text-align: center; color: var(--text-secondary); margin-bottom: 32px; }
+.auth-box .form-group { margin-bottom: 20px; }
+.auth-box .form-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+.auth-box .btn { width: 100%; justify-content: center; }
+.auth-box .divider { display: flex; align-items: center; gap: 16px; margin: 24px 0; color: var(--text-secondary); font-size: 14px; }
+.auth-box .divider::before, .auth-box .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.auth-box .google-btn { width: 100%; justify-content: center; background: #fff; color: #333; border: 2px solid var(--border); }
+.auth-box .google-btn:hover { border-color: var(--primary); }
+.auth-box .auth-footer { text-align: center; margin-top: 20px; color: var(--text-secondary); font-size: 14px; }
+.auth-box .auth-footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+.auth-box .password-toggle { position: relative; }
+.auth-box .password-toggle .toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-secondary); background: none; border: none; }

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders - Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a href="dashboard.html" class="logo">Shop<span>Verse</span> <span style="font-size:10px;color:var(--accent)">Admin</span></a>
+      <a href="dashboard.html" class="nav-item"><i class="fas fa-chart-line"></i> Dashboard</a>
+      <a href="products.html" class="nav-item"><i class="fas fa-box"></i> Products</a>
+      <a href="categories.html" class="nav-item"><i class="fas fa-tags"></i> Categories</a>
+      <a href="orders.html" class="nav-item active"><i class="fas fa-truck"></i> Orders</a>
+      <a href="users.html" class="nav-item"><i class="fas fa-users"></i> Users</a>
+      <a href="reviews.html" class="nav-item"><i class="fas fa-star"></i> Reviews</a>
+      <a href="coupons.html" class="nav-item"><i class="fas fa-percent"></i> Coupons</a>
+      <a href="banners.html" class="nav-item"><i class="fas fa-images"></i> Banners</a>
+      <a href="analytics.html" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+      <div class="nav-divider"></div>
+      <a href="settings.html" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+      <a href="../index.html" class="nav-item"><i class="fas fa-store"></i> View Store</a>
+      <a href="#" class="nav-item" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+    <div class="admin-overlay" id="adminOverlay" onclick="document.getElementById('adminSidebar').classList.remove('open');this.classList.remove('show')"></div>
+    <div class="admin-main">
+      <header class="admin-header">
+        <h1 class="page-title">Orders</h1>
+        <div class="admin-actions">
+          <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        </div>
+      </header>
+      <div style="margin-bottom:16px"><input type="text" id="searchOrders" class="input" style="max-width:300px" placeholder="Search by Order ID..." oninput="renderOrders()"></div>
+      <div style="overflow-x:auto"><table class="table" id="ordersTable"><thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/orders.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    let allOrders = [];
+    let userMap = {};
+
+    auth.onAuthStateChanged(async user => {
+      if (!Admin.checkAuth()) return;
+      const [ordersSnap, usersSnap] = await Promise.all([
+        db.ref('orders').once('value'),
+        db.ref('users').once('value')
+      ]);
+      if (usersSnap.val()) {
+        userMap = Object.fromEntries(Object.entries(usersSnap.val()).map(([id, u]) => [id, u.email || u.username]));
+      }
+      if (ordersSnap.val()) {
+        allOrders = Object.entries(ordersSnap.val()).map(([id, o]) => ({ id, ...o }));
+      }
+      renderOrders();
+    });
+
+    function renderOrders() {
+      const q = document.getElementById('searchOrders').value.toLowerCase();
+      const filtered = allOrders.filter(o => !q || o.id.slice(-8).toLowerCase().includes(q));
+      document.getElementById('ordersBody').innerHTML = filtered.map(o => `
+        <tr>
+          <td>#${o.id.slice(-8)}</td>
+          <td>${userMap[o.userId] || 'Unknown'}</td>
+          <td>${o.items ? o.items.length : 0}</td>
+          <td>${App.formatPrice(o.total)}</td>
+          <td><span class="badge" style="background:${Orders.statusColor(o.status)};color:#fff">${o.status}</span></td>
+          <td>${o.createdAt ? new Date(o.createdAt).toLocaleDateString() : '-'}</td>
+          <td class="actions">
+            <select class="input" style="padding:4px;font-size:13px" onchange="updateStatus('${o.id}', this.value)">
+              ${['pending','processing','shipped','delivered','cancelled'].map(s => `<option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function updateStatus(id, status) {
+      await Admin.updateOrderStatus(id, status);
+      const o = allOrders.find(x => x.id === id);
+      if (o) o.status = status;
+      renderOrders();
+    }
+  </script>
+</body>
+</html>

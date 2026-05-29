@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users - Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/admin.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <div class="admin-layout">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a href="dashboard.html" class="logo">Shop<span>Verse</span> <span style="font-size:10px;color:var(--accent)">Admin</span></a>
+      <a href="dashboard.html" class="nav-item"><i class="fas fa-chart-line"></i> Dashboard</a>
+      <a href="products.html" class="nav-item"><i class="fas fa-box"></i> Products</a>
+      <a href="categories.html" class="nav-item"><i class="fas fa-tags"></i> Categories</a>
+      <a href="orders.html" class="nav-item"><i class="fas fa-truck"></i> Orders</a>
+      <a href="users.html" class="nav-item active"><i class="fas fa-users"></i> Users</a>
+      <a href="reviews.html" class="nav-item"><i class="fas fa-star"></i> Reviews</a>
+      <a href="coupons.html" class="nav-item"><i class="fas fa-percent"></i> Coupons</a>
+      <a href="banners.html" class="nav-item"><i class="fas fa-images"></i> Banners</a>
+      <a href="analytics.html" class="nav-item"><i class="fas fa-chart-bar"></i> Analytics</a>
+      <div class="nav-divider"></div>
+      <a href="settings.html" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+      <a href="../index.html" class="nav-item"><i class="fas fa-store"></i> View Store</a>
+      <a href="#" class="nav-item" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </aside>
+    <div class="admin-overlay" id="adminOverlay" onclick="document.getElementById('adminSidebar').classList.remove('open');this.classList.remove('show')"></div>
+    <div class="admin-main">
+      <header class="admin-header">
+        <h1 class="page-title">Users</h1>
+        <div class="admin-actions">
+          <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        </div>
+      </header>
+      <div style="margin-bottom:16px"><input type="text" id="searchUsers" class="input" style="max-width:300px" placeholder="Search by name or email..." oninput="renderUsers()"></div>
+      <div style="overflow-x:auto"><table class="table" id="usersTable"><thead><tr><th>Avatar</th><th>Username</th><th>Email</th><th>Orders</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/admin.js"></script>
+  <script>
+    let allUsers = [];
+    let orderCountMap = {};
+
+    auth.onAuthStateChanged(async user => {
+      if (!Admin.checkAuth()) return;
+      const [usersSnap, ordersSnap] = await Promise.all([
+        db.ref('users').once('value'),
+        db.ref('orders').once('value')
+      ]);
+      if (ordersSnap.val()) {
+        Object.values(ordersSnap.val()).forEach(o => {
+          if (o.userId) orderCountMap[o.userId] = (orderCountMap[o.userId] || 0) + 1;
+        });
+      }
+      if (usersSnap.val()) {
+        allUsers = Object.entries(usersSnap.val()).map(([id, u]) => ({ id, ...u }));
+      }
+      renderUsers();
+    });
+
+    function renderUsers() {
+      const q = document.getElementById('searchUsers').value.toLowerCase();
+      const filtered = allUsers.filter(u =>
+        (u.username || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q)
+      );
+      document.getElementById('usersBody').innerHTML = filtered.map(u => `
+        <tr>
+          <td><img src="${u.photoURL || 'https://via.placeholder.com/40'}" style="width:40px;height:40px;object-fit:cover;border-radius:50%"></td>
+          <td><strong>${u.username || 'N/A'}</strong></td>
+          <td>${u.email}</td>
+          <td>${orderCountMap[u.id] || 0}</td>
+          <td>${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}</td>
+          <td><span class="badge ${u.isBlocked ? 'badge-danger' : 'badge-success'}">${u.isBlocked ? 'Blocked' : 'Active'}</span></td>
+          <td class="actions">
+            <button class="btn btn-sm ${u.isBlocked ? 'btn-success' : 'btn-secondary'}" onclick="toggleBlock('${u.id}', ${u.isBlocked})">${u.isBlocked ? 'Unblock' : 'Block'}</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function toggleBlock(id, isBlocked) {
+      if (isBlocked) {
+        await Admin.unblockUser(id);
+      } else {
+        await Admin.blockUser(id);
+      }
+      const u = allUsers.find(x => x.id === id);
+      if (u) u.isBlocked = !u.isBlocked;
+      renderUsers();
+    }
+
+    async function deleteUser(id) {
+      if (confirm('Delete this user? This action cannot be undone.')) {
+        await Admin.deleteUser(id);
+        allUsers = allUsers.filter(u => u.id !== id);
+        renderUsers();
+      }
+    }
+  </script>
+</body>
+</html>

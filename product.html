@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product - ShopVerse</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/darkmode.css">
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">Shop<span>Verse</span></a>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+      <div class="nav-links" id="navLinks">
+        <a href="index.html">Home</a>
+        <a href="products.html">Products</a>
+        <a href="categories.html">Categories</a>
+        <a href="orders.html">Orders</a>
+        <a href="admin/dashboard.html" class="nav-admin" style="display:none">Admin</a>
+      </div>
+      <div class="nav-icons">
+        <button id="themeToggle" class="btn btn-sm btn-secondary"><i class="fas fa-moon"></i></button>
+        <a href="search.html"><i class="fas fa-search"></i></a>
+        <a href="wishlist.html"><i class="fas fa-heart"></i><span class="count wishlist-count">0</span></a>
+        <a href="cart.html"><i class="fas fa-shopping-cart"></i><span class="count cart-count">0</span></a>
+        <a href="login.html" class="nav-login"><i class="fas fa-user"></i></a>
+        <a href="profile.html" class="nav-user" style="display:none"><i class="fas fa-user"></i></a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container" style="padding-top:120px;padding-bottom:60px">
+    <div id="productDetail"></div>
+    <section style="margin-top:60px">
+      <h2 class="section-title">Related Products</h2>
+      <div class="grid grid-4" id="relatedGrid"></div>
+    </section>
+    <section style="margin-top:60px">
+      <h2 class="section-title">Customer Reviews</h2>
+      <div id="reviewsSection"></div>
+      <div id="reviewForm" style="margin-top:24px;display:none">
+        <h3>Write a Review</h3>
+        <div class="form-group"><label>Rating</label><select id="reviewRating" class="input" style="max-width:200px">
+          <option value="5">★★★★★</option><option value="4">★★★★☆</option><option value="3">★★★☆☆</option>
+          <option value="2">★★☆☆☆</option><option value="1">★☆☆☆☆</option>
+        </select></div>
+        <div class="form-group"><label>Review</label><textarea id="reviewText" class="input" rows="4" placeholder="Your review..."></textarea></div>
+        <button class="btn btn-primary" onclick="submitReview()">Submit Review</button>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="grid">
+        <div><h4>ShopVerse</h4><p style="color:var(--text-secondary)">Your premium shopping destination.</p></div>
+        <div><h4>Quick Links</h4><a href="products.html">Products</a><a href="categories.html">Categories</a><a href="cart.html">Cart</a><a href="orders.html">Orders</a></div>
+        <div><h4>Support</h4><a href="contact.html">Contact</a><a href="about.html">About Us</a><a href="faq.html">FAQ</a><a href="privacy.html">Privacy Policy</a></div>
+        <div><h4>Follow Us</h4><a href="#"><i class="fab fa-facebook"></i> Facebook</a><a href="#"><i class="fab fa-instagram"></i> Instagram</a><a href="#"><i class="fab fa-twitter"></i> Twitter</a></div>
+      </div>
+      <div class="bottom">&copy; 2026 ShopVerse. All rights reserved.</div>
+    </div>
+  </footer>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/wishlist.js"></script>
+  <script>
+    let currentProduct = null;
+    async function loadProduct() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      if (!id) { document.getElementById('productDetail').innerHTML = '<p>Product not found</p>'; return; }
+      const p = await Products.getProduct(id);
+      if (!p) { document.getElementById('productDetail').innerHTML = '<p>Product not found</p>'; return; }
+      currentProduct = p;
+      const detail = document.getElementById('productDetail');
+      detail.innerHTML = `
+        <div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:0;overflow:hidden">
+          <div><img src="${p.images?.[0] || p.image||'https://via.placeholder.com/500'}" style="width:100%;height:500px;object-fit:cover" alt="${p.name}"></div>
+          <div style="padding:40px">
+            <h1 style="font-size:28px;font-weight:800;margin-bottom:8px">${p.name}</h1>
+            ${p.brand ? `<p style="color:var(--text-secondary);margin-bottom:8px">Brand: ${p.brand}</p>` : ''}
+            ${p.sku ? `<p style="color:var(--text-secondary);font-size:13px;margin-bottom:8px">SKU: ${p.sku}</p>` : ''}
+            <div style="font-size:32px;font-weight:800;color:var(--primary);margin:16px 0">
+              ${App.formatPrice(p.salePrice || p.price)}
+              ${p.salePrice ? `<span style="font-size:18px;color:var(--text-secondary);text-decoration:line-through;margin-left:12px;font-weight:400">${App.formatPrice(p.price)}</span>` : ''}
+              ${p.discount ? `<span class="badge badge-danger" style="margin-left:12px;font-size:14px">-${p.discount}%</span>` : ''}
+            </div>
+            ${p.rating ? `<div style="margin-bottom:16px">${'★'.repeat(Math.round(p.rating))}${'☆'.repeat(5-Math.round(p.rating))} <span style="color:var(--text-secondary)">(${p.reviews||0} reviews)</span></div>` : ''}
+            <p style="color:var(--text-secondary);margin-bottom:16px;line-height:1.6">${p.description || 'No description available.'}</p>
+            <p style="margin-bottom:16px">Stock: <strong>${p.stock > 0 ? p.stock + ' units' : 'Out of Stock'}</strong></p>
+            ${p.tags?.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">${p.tags.map(t => `<span class="badge badge-primary">${t}</span>`).join('')}</div>` : ''}
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <button class="btn btn-primary btn-lg" onclick="Cart.add('${p.id}')" ${p.stock < 1 ? 'disabled' : ''}><i class="fas fa-shopping-cart"></i> Add to Cart</button>
+              <button class="btn btn-outline btn-lg" onclick="Wishlist.toggle('${p.id}')"><i class="fas fa-heart"></i> Wishlist</button>
+              <button class="btn btn-secondary btn-lg" onclick="navigator.share({title:'${p.name}',url:window.location.href})"><i class="fas fa-share"></i> Share</button>
+            </div>
+          </div>
+        </div>`;
+      loadReviews(id);
+      const related = await Products.getRelated(p);
+      document.getElementById('relatedGrid').innerHTML = related.map(r => Products.renderCard(r)).join('');
+      auth.onAuthStateChanged(u => { document.getElementById('reviewForm').style.display = u ? 'block' : 'none'; });
+    }
+
+    async function loadReviews(productId) {
+      const snap = await db.ref('reviews').orderByChild('productId').equalTo(productId).once('value');
+      const section = document.getElementById('reviewsSection');
+      if (!snap.val()) { section.innerHTML = '<p>No reviews yet</p>'; return; }
+      section.innerHTML = Object.entries(snap.val()).map(([id, r]) => `
+        <div class="card" style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>${r.username || 'Anonymous'}</strong>
+            <span style="color:#fdcb6e">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+          </div>
+          <p style="color:var(--text-secondary)">${r.text}</p>
+        </div>
+      `).join('');
+    }
+
+    async function submitReview() {
+      const user = auth.currentUser;
+      if (!user) { App.showToast('Please login', 'error'); return; }
+      const rating = parseInt(document.getElementById('reviewRating').value);
+      const text = document.getElementById('reviewText').value;
+      if (!text) { App.showToast('Please write a review', 'error'); return; }
+      await db.ref('reviews').push({ productId: currentProduct.id, userId: user.uid, username: user.displayName || user.email, rating, text, createdAt: Date.now() });
+      App.showToast('Review submitted!', 'success');
+      document.getElementById('reviewText').value = '';
+      loadReviews(currentProduct.id);
+    }
+    document.addEventListener('DOMContentLoaded', loadProduct);
+  </script>
+</body>
+</html>

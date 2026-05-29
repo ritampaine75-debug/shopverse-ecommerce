@@ -1,0 +1,25 @@
+[data-theme="dark"] {
+  --bg: #1a1a2e;
+  --bg-secondary: #16213e;
+  --text: #eaeaea;
+  --text-secondary: #a0a0b0;
+  --border: #2d2d4a;
+  --shadow: 0 4px 20px rgba(0,0,0,0.3);
+  --glass: rgba(26, 26, 46, 0.8);
+  --glass-border: rgba(255,255,255,0.08);
+}
+[data-theme="dark"] .navbar { background: rgba(26, 26, 46, 0.9); }
+[data-theme="dark"] .footer { background: var(--bg-secondary); }
+[data-theme="dark"] .card { background: var(--glass); }
+[data-theme="dark"] .product-card { background: var(--glass); }
+[data-theme="dark"] .loading-screen { background: var(--bg); }
+[data-theme="dark"] .input { background: var(--bg-secondary); border-color: var(--border); color: var(--text); }
+[data-theme="dark"] .btn-secondary { background: var(--bg-secondary); color: var(--text); }
+[data-theme="dark"] .admin-sidebar { background: var(--bg); border-right-color: var(--border); }
+[data-theme="dark"] .admin-header { background: rgba(26,26,46,0.9); }
+[data-theme="dark"] .toast { box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+[data-theme="dark"] .modal-content { background: var(--bg); }
+[data-theme="dark"] .table { color: var(--text); }
+[data-theme="dark"] .table th { background: var(--bg-secondary); }
+[data-theme="dark"] .table td { border-bottom-color: var(--border); }
+[data-theme="dark"] ::-webkit-scrollbar-track { background: var(--bg-secondary); }
