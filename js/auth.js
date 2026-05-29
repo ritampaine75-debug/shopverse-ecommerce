@@ -123,6 +123,7 @@ const Auth = {
   },
 
   getErrorMessage(code) {
+    console.error('Firebase auth error:', code);
     const messages = {
       'auth/user-not-found': 'No account found with this email',
       'auth/wrong-password': 'Incorrect password',
@@ -131,9 +132,12 @@ const Auth = {
       'auth/invalid-email': 'Invalid email address',
       'auth/too-many-requests': 'Too many attempts. Try again later',
       'auth/popup-closed-by-user': 'Login was cancelled',
-      'auth/requires-recent-login': 'Please login again to continue'
+      'auth/requires-recent-login': 'Please login again to continue',
+      'auth/operation-not-allowed': 'Email/Password sign-in not enabled. Enable it in Firebase Console > Authentication > Sign-in method',
+      'auth/network-request-failed': 'Network error. Check your internet connection',
+      'auth/configuration-not-found': 'Firebase project not configured properly'
     };
-    return messages[code] || 'An error occurred. Please try again';
+    return messages[code] || `Error: ${code || 'Unknown error'}. Check console for details`;
   },
 
   isAdmin() {
