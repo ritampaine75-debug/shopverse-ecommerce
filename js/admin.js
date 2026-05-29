@@ -1,8 +1,7 @@
 const Admin = {
   checkAuth() {
-    const user = auth.currentUser;
-    if (!user || user.email !== 'admin@admin.com') {
-      window.location.href = '../login.html';
+    if (sessionStorage.getItem('adminAuth') !== 'true') {
+      window.location.href = 'index.html';
       return false;
     }
     return true;

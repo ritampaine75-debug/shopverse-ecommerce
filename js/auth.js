@@ -69,6 +69,7 @@ const Auth = {
   },
 
   async logout() {
+    sessionStorage.removeItem('adminAuth');
     await auth.signOut();
     App.showToast('Logged out successfully', 'info');
     window.location.href = 'login.html';
@@ -136,7 +137,6 @@ const Auth = {
   },
 
   isAdmin() {
-    const user = auth.currentUser;
-    return user && user.email === 'admin@admin.com';
+    return sessionStorage.getItem('adminAuth') === 'true';
   }
 };

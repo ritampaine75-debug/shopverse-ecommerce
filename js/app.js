@@ -58,7 +58,7 @@ const App = {
     const adminLinks = document.querySelectorAll('.nav-admin');
     loginLinks.forEach(el => el.style.display = this.currentUser ? 'none' : '');
     userLinks.forEach(el => el.style.display = this.currentUser ? '' : 'none');
-    adminLinks?.forEach(el => el.style.display = this.currentUser && this.currentUser.email === 'admin@admin.com' ? '' : 'none');
+    adminLinks?.forEach(el => el.style.display = sessionStorage.getItem('adminAuth') === 'true' ? '' : 'none');
     if (this.currentUser && userNames.length) {
       userNames.forEach(el => el.textContent = this.currentUser.displayName || this.currentUser.email);
     }
